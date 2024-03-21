@@ -1,8 +1,10 @@
 import threading
 
 # import "packages" from flask
-from flask import render_template,request  # import render_template from "public" flask libraries
+from flask import jsonify, render_template,request  # import render_template from "public" flask libraries
 from flask.cli import AppGroup
+import pandas as pd
+from sklearn.base import RegressorMixin
 
 
 # import "packages" from "this" project
@@ -17,6 +19,8 @@ from api.player import player_api
 # database migrations
 from model.users import initUsers
 from model.players import initPlayers
+from sklearn.compose import ColumnTransformer as ct
+
 
 # setup App pages
 from projects.projects import app_projects # Blueprint directory import projects definition
@@ -40,6 +44,23 @@ def page_not_found(e):
 @app.route('/')  # connects default URL to index() function
 def index():
     return render_template("index.html")
+
+@app.route('/predict', methods=['POST'])
+def predict_pulse_rate():
+    data = request.json
+    new_passenger = pd.DataFrame(data)
+    
+    # Preprocess the new passenger data
+    new_passenger = pd.get_dummies(new_passenger, columns=['diet', 'time', 'kind'])
+    
+    # Perform one-hot encoding for the categorical columns
+    X_new_passenger = ct.transform(new_passenger)
+    
+    # Predict the pulse rate for the new passenger
+    pulse_prediction = RegressorMixin.predict(X_new_passenger)
+    rounded_pulse_prediction = round(pulse_prediction[0], 2)
+    
+    return jsonify({'predicted_pulse_rate': rounded_pulse_prediction})
 
 @app.route('/table/')  # connects /stub/ URL to stub() function
 def table():

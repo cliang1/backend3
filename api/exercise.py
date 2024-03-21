@@ -3,8 +3,7 @@
 import json
 from flask import Blueprint, request
 from flask_restful import Api, Resource
-from model.exercise import Exercise  # imports exercise data model
-
+from model.exercises import Exercise
 exercise_api = Blueprint('exercise_api', __name__, url_prefix='/api/exercise')
 api = Api(exercise_api)
 
