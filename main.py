@@ -16,10 +16,13 @@ from api.covid import covid_api # Blueprint import api definition
 from api.joke import joke_api # Blueprint import api definition
 from api.user import user_api # Blueprint import api definition
 from api.player import player_api
+from api.exercise import exercise_api
 # database migrations
 from model.users import initUsers
 from model.players import initPlayers
 from sklearn.compose import ColumnTransformer as ct
+from model.exercises import initExercise
+
 
 
 # setup App pages
@@ -34,7 +37,9 @@ app.register_blueprint(joke_api) # register api routes
 app.register_blueprint(covid_api) # register api routes
 app.register_blueprint(user_api) # register api routes
 app.register_blueprint(player_api)
-app.register_blueprint(app_projects) # register app pages
+app.register_blueprint(app_projects) 
+app.register_blueprint(exercise_api)
+# register app pages
 
 @app.errorhandler(404)  # catch for URL not found
 def page_not_found(e):
@@ -45,22 +50,6 @@ def page_not_found(e):
 def index():
     return render_template("index.html")
 
-@app.route('/predict', methods=['POST'])
-def predict_pulse_rate():
-    data = request.json
-    new_passenger = pd.DataFrame(data)
-    
-    # Preprocess the new passenger data
-    new_passenger = pd.get_dummies(new_passenger, columns=['diet', 'time', 'kind'])
-    
-    # Perform one-hot encoding for the categorical columns
-    X_new_passenger = ct.transform(new_passenger)
-    
-    # Predict the pulse rate for the new passenger
-    pulse_prediction = RegressorMixin.predict(X_new_passenger)
-    rounded_pulse_prediction = round(pulse_prediction[0], 2)
-    
-    return jsonify({'predicted_pulse_rate': rounded_pulse_prediction})
 
 @app.route('/table/')  # connects /stub/ URL to stub() function
 def table():
@@ -81,6 +70,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 def generate_data():
     initUsers()
     initPlayers()
+    initExercise()
 
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)
