@@ -18,8 +18,8 @@ class ExerciseModel:
         self.model = None
         self.dt = None
         # define ML features and target
-        self.features = ['id','pulse', 'time', 'kind']
-        self.target = 'diet'
+        self.features = ['id','diet', 'time', 'kind']
+        self.target = 'pulse'
         # load the titanic dataset
         self.exercise_data = sns.load_dataset('exercise')
         # one-hot encoder used to encode 'embarked' column
@@ -29,6 +29,7 @@ class ExerciseModel:
     def _clean(self):
         # Drop unnecessary columns
         self.exercise_data.drop(['id'], axis=1, inplace=True)
+        self.exercise_data.drop(['diet'], axis=1, inplace=True)
 
         # Convert boolean columns to integers
         self.exercise_data['time'] = self.exercise_data['time'].apply(lambda x: int(x.split()[0]))
@@ -75,7 +76,6 @@ class ExerciseModel:
     def predict(self, person):
         
         person_df = pd.DataFrame(person, index=[0])
-        person_df['sex'] = person_df['sex'].apply(lambda x: 1 if x == 'male' else 0)
 
         self.exercise_data['time'] = self.exercise_data['time'].apply(lambda x: int(x.split()[0]))
 
@@ -85,34 +85,24 @@ class ExerciseModel:
         self.exercise_data = pd.concat([self.exercise_data, onehot_df], axis=1)
         self.exercise_data.drop(['kind'], axis=1, inplace=True)
         self.exercise_data.drop(['id'], axis=1, inplace=True)
+        self.exercise_data.drop(['diet'], axis=1, inplace=True)
         
-        diet = np.squeeze(self.model.predict_proba(person_df))
+        pulse = np.squeeze(self.model.predict_proba(person_df))
 
-        return {'diet': diet}
+        return {'pulse': pulse}
     
     def feature_weights(self):
-        """Get the feature weights
-        The weights represent the relative importance of each feature in the prediction model.
-
-        Returns:
-            dictionary: contains each feature as a key and its weight of importance as a value
-        """
-        # extract the feature importances from the decision tree model
         importances = self.dt.feature_importances_
-        # return the feature importances as a dictionary, using dictionary comprehension
         return {feature: importance for feature, importance in zip(self.features, importances)} 
     
 def initExercise():
-    """ Initialize the Titanic Model.
-    This function is used to load the Titanic Model into memory, and prepare it for prediction.
-    """
     ExerciseModel.get_instance()
     
 def testExercise():
     print(" Step 1:  Define theoritical passenger data for prediction: ")
     person = {
         'id': ['2'],
-        'pulse': ['85'],
+        'diet': ['low fat'],
         'time': ['1 min'],
         'kind': ['rest'],
 
@@ -126,7 +116,7 @@ def testExercise():
 
     print(" Step 3:", exerciseModel.predict.__doc__)
     probability = exerciseModel.predict(person)
-    print('\t diet probability: {:.2%}'.format(probability.get('diet')))
+    print('\t pulse probability: {:.2%}'.format(probability.get('pulse')))
     print()
     
     # print the feature weights in the prediction model
