@@ -1,94 +1,54 @@
-from flask import Blueprint, jsonify  # jsonify creates an endpoint response object
-from flask_restful import Api, Resource # used for REST API building
-import requests  # used for testing 
+from flask import Blueprint, jsonify
+from flask_restful import Api, Resource
+import requests
 import random
 
-from model.jokes import *
+from model.exercises import ExerciseModel
 
-joke_api = Blueprint('joke_api', __name__,
-                   url_prefix='/api/jokes')
+exercise_api = Blueprint('exercise_api', __name__, url_prefix='/api/exercises')
+api = Api(exercise_api)
 
-# API generator https://flask-restful.readthedocs.io/en/latest/api.html#id1
-api = Api(joke_api)
-
-class JokesAPI:
-    # not implemented
-    class _Create(Resource):
-        def post(self, joke):
-            pass
-            
-    # getJokes()
+class ExerciseAPI:
     class _Read(Resource):
         def get(self):
-            return jsonify(getJokes())
+            instance = ExerciseModel.get_instance()
+            return jsonify(instance.feature_weights())
 
-    # getJoke(id)
-    class _ReadID(Resource):
-        def get(self, id):
-            return jsonify(getJoke(id))
-
-    # getRandomJoke()
     class _ReadRandom(Resource):
         def get(self):
-            return jsonify(getRandomJoke())
-    
-    # getRandomJoke()
-    class _ReadCount(Resource):
-        def get(self):
-            count = countJokes()
-            countMsg = {'count': count}
-            return jsonify(countMsg)
+            instance = ExerciseModel.get_instance()
+            person = {
+                "diet": random.choice(["low fat", "no fat"]),
+                "time": random.choice(["1 min", "15 min", "30 min"]),
+                "kind": random.choice(["rest", "walking", "running"])
+            }
+            return jsonify(instance.predict(person))
 
-    # put method: addJokeHaHa
-    class _UpdateLike(Resource):
-        def put(self, id):
-            addJokeHaHa(id)
-            return jsonify(getJoke(id))
+    class _Predict(Resource):
+        def post(self, data):
+            instance = ExerciseModel.get_instance()
+            return jsonify(instance.predict(data))
 
-    # put method: addJokeBooHoo
-    class _UpdateJeer(Resource):
-        def put(self, id):
-            addJokeBooHoo(id)
-            return jsonify(getJoke(id))
-
-    # building RESTapi resources/interfaces, these routes are added to Web Server
-    api.add_resource(_Create, '/create/<string:joke>')
     api.add_resource(_Read, '/')
-    api.add_resource(_ReadID, '/<int:id>')
     api.add_resource(_ReadRandom, '/random')
-    api.add_resource(_ReadCount, '/count')
-    api.add_resource(_UpdateLike, '/like/<int:id>')
-    api.add_resource(_UpdateJeer, '/jeer/<int:id>')
-    
-if __name__ == "__main__": 
-    # server = "http://127.0.0.1:5000" # run local
-    server = 'https://flask.nighthawkcodingsociety.com' # run from web
-    url = server + "/api/jokes"
-    responses = []  # responses list
+    api.add_resource(_Predict, '/predict')
 
-    # get count of jokes on server
-    count_response = requests.get(url+"/count")
-    count_json = count_response.json()
-    count = count_json['count']
+if __name__ == "__main__":
+    server = "http://127.0.0.1:5000"  # Change to your server address
+    url = server + "/api/exercises"
+    responses = []
 
-    # update likes/dislikes test sequence
-    num = str(random.randint(0, count-1)) # test a random record
-    responses.append(
-        requests.get(url+"/"+num)  # read joke by id
-        ) 
-    responses.append(
-        requests.put(url+"/like/"+num) # add to like count
-        ) 
-    responses.append(
-        requests.put(url+"/jeer/"+num) # add to jeer count
-        ) 
+    # Fetch feature weights
+    responses.append(requests.get(url))
 
-    # obtain a random joke
-    responses.append(
-        requests.get(url+"/random")  # read a random joke
-        ) 
+    # Fetch a random prediction
+    responses.append(requests.get(url + "/random"))
 
-    # cycle through responses
+    # Test prediction with custom data
+    data = {"diet": "low fat", "time": "15 min", "kind": "rest"}
+    responses.append(requests.post(url + "/predict", json=data))
+
+    # Display responses
     for response in responses:
         print(response)
         try:

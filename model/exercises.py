@@ -1,3 +1,9 @@
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import OneHotEncoder
+import pandas as pd
+import numpy as np
+
 class ExerciseModel:
     _instance = None
     
@@ -134,7 +140,7 @@ class ExerciseModel:
         self.dt = DecisionTreeClassifier()
         self.dt.fit(X, y)
 
-    def predict_pulse(self, person):
+    def predict(self, person):
         person_df = pd.DataFrame(person, index=[0])
         pulse = np.squeeze(self.model.predict_proba(person_df))
         return {'pulse': pulse}
