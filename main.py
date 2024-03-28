@@ -21,7 +21,7 @@ from api.exercise import exercise_api
 from model.users import initUsers
 from model.players import initPlayers
 from sklearn.compose import ColumnTransformer as ct
-from model.exercises import initExercise
+from model.exercises import ExerciseModel
 
 
 
@@ -70,7 +70,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 def generate_data():
     initUsers()
     initPlayers()
-    initExercise()
+    
 
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)
