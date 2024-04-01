@@ -10,10 +10,10 @@ class ExerciseModel:
     def __init__(self):
         self.model = None
         self.dt = None
-        self.features = ['id', 'diet', 'time', 'kind']
+        self.features = ['time', 'kind']  # Removed 'id' and 'diet'
         self.target = 'pulse'
         self.encoder = OneHotEncoder(handle_unknown='ignore')
-        self.exercise_data = []
+        self.exercise_data = pd.DataFrame([])  # Initialize as an empty DataFrame
 
     @staticmethod
     def get_instance():   
@@ -22,7 +22,10 @@ class ExerciseModel:
         return ExerciseModel._instance
 
     def init_exercise_list(self):
-        self._init_exercise_data()
+        self._init_exercise_data()  # Call _init_exercise_data first
+        self._clean()  # Call data cleaning after initializing data
+        self._train()  # Train the model after cleaning
+
 
     def _init_exercise_data(self):
         exercise_list = [
@@ -117,22 +120,45 @@ class ExerciseModel:
             {"id": 88, "diet": "no fat", "pulse": 111, "time": "15 min", "kind": "running"},
             {"id": 89, "diet": "no fat", "pulse": 150, "time": "30 min", "kind": "running"}
         ]
-        self.exercise_data = exercise_list
+        self.exercise_data = pd.DataFrame(exercise_list)  # Convert exercise_data to DataFrame
+
+
 
     def _clean(self):
-        for exercise in self.exercise_data:
-            exercise['time'] = int(exercise['time'].split()[0])
-        self.exercise_data = pd.DataFrame(self.exercise_data)
-        self.exercise_data.drop(['id', 'diet'], axis=1, inplace=True)
-        onehot = self.encoder.fit_transform(self.exercise_data[['kind']]).toarray()
-        cols = ['kind_' + str(val) for val in self.encoder.categories_[0]]
-        onehot_df = pd.DataFrame(onehot, columns=cols)
-        self.exercise_data = pd.concat([self.exercise_data, onehot_df], axis=1)
-        self.features.extend(cols)
-        self.exercise_data.drop(['kind'], axis=1, inplace=True)
-        self.exercise_data.dropna(inplace=True)
+        if isinstance(self.exercise_data, pd.DataFrame):
+            # Convert 'time' column to string type if it's not already
+            self.exercise_data['time'] = self.exercise_data['time'].astype(str)
+            # Split the 'time' values and take the first part, then convert it to integer
+            self.exercise_data['time'] = self.exercise_data['time'].str.split().str[0].astype(int)
+            # No need to drop 'id' and 'diet' columns here
+            
+            # Perform one-hot encoding on 'kind' column
+            onehot = self.encoder.fit_transform(self.exercise_data[['kind']]).toarray()
+            cols = ['kind_' + str(val) for val in self.encoder.categories_[0]]
+            onehot_df = pd.DataFrame(onehot, columns=cols)
+            
+            # Check the DataFrame after one-hot encoding
+            print("DataFrame after one-hot encoding:")
+            print(onehot_df.head())
+            
+            # Check the categories learned by the encoder
+            print("One-hot encoded categories:", self.encoder.categories_)
+            
+            # Concatenate the one-hot encoded columns with the existing DataFrame
+            self.exercise_data = pd.concat([self.exercise_data, onehot_df], axis=1)
+            self.features.extend(cols)  # Extend features list with one-hot encoded columns
+            
+            # Drop the original 'kind' column
+            self.exercise_data.drop(['kind'], axis=1, inplace=True)
+            # Remove 'kind' from features list
+            self.features.remove('kind')
+            
+            self.exercise_data.dropna(inplace=True)
+        else:
+            raise ValueError("self.exercise_data is not a DataFrame.")
 
     def _train(self):
+        # Training code remains the same
         X = self.exercise_data[self.features]
         y = self.exercise_data[self.target]
         self.model = LogisticRegression(max_iter=1000)
@@ -140,7 +166,15 @@ class ExerciseModel:
         self.dt = DecisionTreeClassifier()
         self.dt.fit(X, y)
 
+
     def predict(self, person):
-        person_df = pd.DataFrame(person, index=[0])
-        pulse = np.squeeze(self.model.predict_proba(person_df))
-        return {'pulse': pulse}
+        if self.model is None:  # Check if model is trained
+            self._train()  # Train model if not trained
+        
+        # Filter out features not present in the person dictionary
+        features_to_keep = [feature for feature in self.features if feature in person]
+        person_df = pd.DataFrame({feature: [person[feature]] for feature in features_to_keep})
+
+        # Get the probability estimates for the positive class (index 1)
+        positive_class_proba = self.model.predict_proba(person_df)[:, 1]
+        return {'pulse': positive_class_proba}
