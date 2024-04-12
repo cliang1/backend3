@@ -16,12 +16,14 @@ from api.covid import covid_api # Blueprint import api definition
 #from api.joke import joke_api # Blueprint import api definition
 from api.user import user_api # Blueprint import api definition
 from api.player import player_api
-from api.exercise import exercise_api
+from api.fitness import fitness_api
+#from api.exercise import exercise_api
 # database migrations
 from model.users import initUsers
 from model.players import initPlayers
+from model.fitnesses import initFitnessModel
 from sklearn.compose import ColumnTransformer as ct
-from model.exercises import ExerciseModel
+#from model.exercises import ExerciseModel
 
 
 
@@ -37,8 +39,9 @@ db.init_app(app)
 app.register_blueprint(covid_api) # register api routes
 app.register_blueprint(user_api) # register api routes
 app.register_blueprint(player_api)
-app.register_blueprint(app_projects) 
-app.register_blueprint(exercise_api)
+app.register_blueprint(app_projects)
+app.register_blueprint(fitness_api) 
+#app.register_blueprint(exercise_api)
 # register app pages
 
 @app.errorhandler(404)  # catch for URL not found
@@ -70,6 +73,8 @@ custom_cli = AppGroup('custom', help='Custom commands')
 def generate_data():
     initUsers()
     initPlayers()
+    initFitnessModel()
+    
     
 
 # Register the custom command group with the Flask application

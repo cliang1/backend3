@@ -133,7 +133,7 @@ class ExerciseModel:
             # No need to drop 'id' and 'diet' columns here
             
             # Perform one-hot encoding on 'kind' column
-            onehot = self.encoder.fit_transform(self.exercise_data[['kind']]).toarray()
+            onehot = self.encoder.fit_transform(self.exercise_data[self.features]).toarray()
             cols = ['kind_' + str(val) for val in self.encoder.categories_[0]]
             onehot_df = pd.DataFrame(onehot, columns=cols)
             
@@ -148,10 +148,7 @@ class ExerciseModel:
             self.exercise_data = pd.concat([self.exercise_data, onehot_df], axis=1)
             self.features.extend(cols)  # Extend features list with one-hot encoded columns
             
-            # Drop the original 'kind' column
-            self.exercise_data.drop(['kind'], axis=1, inplace=True)
-            # Remove 'kind' from features list
-            self.features.remove('kind')
+            
             
             self.exercise_data.dropna(inplace=True)
         else:
